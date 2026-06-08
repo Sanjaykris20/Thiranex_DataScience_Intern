@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Performance Exploratory Data Analysis</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-color: #060b13;
+            --card-bg: rgba(15, 27, 48, 0.45);
+            --card-border: rgba(255, 255, 255, 0.06);
+            --primary: #3b82f6;
+            --primary-glow: rgba(59, 130, 246, 0.3);
+            --secondary: #10b981;
+            --accent: #f43f5e;
+            --text-main: #f3f4f6;
+            --text-muted: #93c5fd;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.12) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(16, 185, 129, 0.12) 0px, transparent 50%);
+            color: var(--text-main);
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2.5rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid var(--card-border);
+        }
+
+        h1 {
+            font-size: 2.2rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #fff 30%, var(--primary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.5px;
+        }
+
+        .badge {
+            background: rgba(59, 130, 246, 0.2);
+            border: 1px solid var(--primary);
+            color: #93c5fd;
+            padding: 0.4rem 1rem;
+            border-radius: 50px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        /* Metrics grid */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
+            padding: 1.8rem;
+            backdrop-filter: blur(12px);
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            border-color: rgba(255, 255, 255, 0.12);
+            transform: translateY(-4px);
+        }
+
+        .kpi-card {
+            position: relative;
+            overflow: hidden;
+            border-left: 4px solid var(--primary);
+        }
+
+        .kpi-card.secondary {
+            border-left-color: var(--secondary);
+        }
+
+        .kpi-card.accent {
+            border-left-color: var(--accent);
+        }
+
+        .kpi-label {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 0.5rem;
+        }
+
+        .kpi-val {
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: #fff;
+        }
+
+        /* Layout Grid */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        @media (max-width: 1024px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .section-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .chart-box {
+            position: relative;
+            height: 320px;
+            width: 100%;
+        }
+
+        /* Statistics Table */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            margin-top: 1rem;
+        }
+
+        th {
+            background: rgba(255, 255, 255, 0.02);
+            padding: 0.8rem 1rem;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            border-bottom: 1px solid var(--card-border);
+        }
+
+        td {
+            padding: 0.8rem 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+            font-size: 0.9rem;
+        }
+
+        tr:hover td {
+            background: rgba(255, 255, 255, 0.01);
+        }
+
+        /* Heatmap Grid */
+        .correlation-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .corr-cell {
+            aspect-ratio: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-align: center;
+            padding: 0.2rem;
+        }
+
+        .corr-lbl {
+            font-size: 0.65rem;
+            color: rgba(255, 255, 255, 0.6);
+            margin-top: 0.2rem;
+            text-transform: uppercase;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div>
+                <h1>Student Engagement & Performance EDA</h1>
+                <p style="color: var(--text-muted); margin-top: 0.25rem;">Statistical reports and pattern correlation analyses</p>
+            </div>
+            <div class="badge">Project 3: Exploratory Data Analysis</div>
+        </header>
+
+        <!-- KPI summaries -->
+        <div class="kpi-grid">
+            <div class="card kpi-card">
+                <div class="kpi-label">Average Final Grade</div>
+                <div class="kpi-val" id="avg-grade">-</div>
+            </div>
+            <div class="card kpi-card secondary">
+                <div class="kpi-label">Average Attendance Rate</div>
+                <div class="kpi-val" id="avg-attendance">-</div>
+            </div>
+            <div class="card kpi-card">
+                <div class="kpi-label">Weekly Study Hours (Mean)</div>
+                <div class="kpi-val" id="avg-study">-</div>
+            </div>
+            <div class="card kpi-card accent">
+                <div class="kpi-label">Mean Sleep Duration</div>
+                <div class="kpi-val" id="avg-sleep">-</div>
+            </div>
+        </div>
+
+        <!-- Charts grid -->
+        <div class="dashboard-grid">
+            <div class="card">
+                <h2 class="section-title">Study Hours vs. Final Exam Grades</h2>
+                <div class="chart-box">
+                    <canvas id="scatterChart"></canvas>
+                </div>
+            </div>
+            <div class="card">
+                <h2 class="section-title">Impact of Study Intensity</h2>
+                <div class="chart-box">
+                    <canvas id="studyTierChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="dashboard-grid">
+            <!-- Descriptives Table -->
+            <div class="card">
+                <h2 class="section-title">Descriptive Statistics</h2>
+                <div style="overflow-x: auto;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Variable</th>
+                                <th>Mean</th>
+                                <th>Std Dev</th>
+                                <th>Min</th>
+                                <th>Median</th>
+                                <th>Max</th>
+                            </tr>
+                        </thead>
+                        <tbody id="stats-body">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Correlation heatmap matrix -->
+            <div class="card">
+                <h2 class="section-title">Correlation Strength Heatmap</h2>
+                <div class="correlation-grid" id="corr-grid">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Data Import -->
+    <script src="eda_data.js"></script>
+    <script>
+        // Set KPIs
+        document.getElementById('avg-grade').innerText = edaResults.overall_averages.avg_grade.toFixed(1) + '%';
+        document.getElementById('avg-attendance').innerText = edaResults.overall_averages.avg_attendance.toFixed(1) + '%';
+        document.getElementById('avg-study').innerText = edaResults.overall_averages.avg_study_hours.toFixed(1) + ' hrs';
+        document.getElementById('avg-sleep').innerText = edaResults.overall_averages.avg_sleep.toFixed(1) + ' hrs';
+
+        // Set Statistics table
+        const statsBody = document.getElementById('stats-body');
+        const vars = ['Study_Hours_Per_Week', 'Attendance_Rate', 'Sleep_Hours_Per_Night', 'Final_Grade'];
+        const varLabels = {
+            'Study_Hours_Per_Week': 'Study Hours/Week',
+            'Attendance_Rate': 'Attendance Rate (%)',
+            'Sleep_Hours_Per_Night': 'Sleep (Hours/Night)',
+            'Final_Grade': 'Final Grade (0-100)'
+        };
+
+        vars.forEach(v => {
+            const meanVal = edaResults.descriptive_statistics[v]['mean'].toFixed(2);
+            const stdVal = edaResults.descriptive_statistics[v]['std'].toFixed(2);
+            const minVal = edaResults.descriptive_statistics[v]['min'].toFixed(1);
+            const medVal = edaResults.descriptive_statistics[v]['50%'].toFixed(1);
+            const maxVal = edaResults.descriptive_statistics[v]['max'].toFixed(1);
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td style="font-weight: 600; color: #fff;">${varLabels[v]}</td>
+                <td>${meanVal}</td>
+                <td>${stdVal}</td>
+                <td>${minVal}</td>
+                <td>${medVal}</td>
+                <td style="font-weight: 600; color: var(--secondary);">${maxVal}</td>
+            `;
+            statsBody.appendChild(tr);
+        });
+
+        // Set correlation matrix grid
+        const corrGrid = document.getElementById('corr-grid');
+        const numCols = ['Study_Hours_Per_Week', 'Attendance_Rate', 'Sleep_Hours_Per_Night', 'Extracurricular_Activities', 'Final_Grade'];
+        const colLabels = ['Study', 'Attend', 'Sleep', 'Extra', 'Grade'];
+
+        // Heatmap cell color based on correlation strength
+        function getCorrColor(val) {
+            // map -1 to 1 to a gradient from blue (negative) to red (positive)
+            // positive: rgba(59, 130, 246, val) or similar
+            if (val >= 0) {
+                return `rgba(16, 185, 129, ${val * 0.8 + 0.1})`; // Greenish for positive
+            } else {
+                return `rgba(244, 63, 94, ${Math.abs(val) * 0.8 + 0.1})`; // Reddish for negative
+            }
+        }
+
+        // Display labels at the top header
+        numCols.forEach((col, index) => {
+            const cell = document.createElement('div');
+            cell.className = 'corr-cell';
+            cell.style.background = 'rgba(255,255,255,0.05)';
+            cell.style.color = 'var(--text-muted)';
+            cell.innerHTML = `<strong>${colLabels[index]}</strong>`;
+            corrGrid.appendChild(cell);
+        });
+
+        // Fill grid values
+        numCols.forEach((colY) => {
+            numCols.forEach((colX) => {
+                const val = edaResults.correlations[colY][colX];
+                const cell = document.createElement('div');
+                cell.className = 'corr-cell';
+                cell.style.background = getCorrColor(val);
+                cell.style.color = '#fff';
+                cell.style.border = '1px solid rgba(255, 255, 255, 0.05)';
+                cell.innerHTML = `
+                    <span>${val.toFixed(2)}</span>
+                `;
+                corrGrid.appendChild(cell);
+            });
+        });
+
+        // Setup Scatter Plot Chart
+        const ctxScatter = document.getElementById('scatterChart').getContext('2d');
+        new Chart(ctxScatter, {
+            type: 'scatter',
+            data: {
+                datasets: [{
+                    label: 'Students',
+                    data: edaResults.scatter_data.map(p => ({ x: p.Study_Hours_Per_Week, y: p.Final_Grade })),
+                    backgroundColor: 'rgba(59, 130, 246, 0.6)',
+                    borderColor: '#3b82f6',
+                    borderWidth: 1,
+                    pointRadius: 5,
+                    hoverRadius: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    x: {
+                        grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                        ticks: { color: '#93c5fd' },
+                        title: { display: true, text: 'Study Hours Per Week', color: '#f3f4f6' }
+                    },
+                    y: {
+                        grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                        ticks: { color: '#93c5fd' },
+                        title: { display: true, text: 'Final Grade (%)', color: '#f3f4f6' }
+                    }
+                }
+            }
+        });
+
+        // Setup Study Tier Chart
+        const ctxTier = document.getElementById('studyTierChart').getContext('2d');
+        const tiers = Object.keys(edaResults.study_hours_impact);
+        const tierGrades = Object.values(edaResults.study_hours_impact);
+        new Chart(ctxTier, {
+            type: 'bar',
+            data: {
+                labels: tiers,
+                datasets: [{
+                    label: 'Mean Grade (%)',
+                    data: tierGrades,
+                    backgroundColor: [
+                        'rgba(244, 63, 94, 0.6)',
+                        'rgba(59, 130, 246, 0.6)',
+                        'rgba(16, 185, 129, 0.6)'
+                    ],
+                    borderColor: [
+                        '#f43f5e',
+                        '#3b82f6',
+                        '#10b981'
+                    ],
+                    borderWidth: 2,
+                    borderRadius: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { grid: { display: false }, ticks: { color: '#93c5fd' } },
+                    y: { grid: { color: 'rgba(255, 255, 255, 0.05)' }, ticks: { color: '#93c5fd' } }
+                }
+            }
+        });
+    </script>
+</body>
+</html>

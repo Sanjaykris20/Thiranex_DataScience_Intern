@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Financial Portfolio Analytics & Forecaster</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-color: #04090b;
+            --card-bg: rgba(10, 24, 27, 0.45);
+            --card-border: rgba(255, 255, 255, 0.07);
+            --primary: #10b981;
+            --primary-glow: rgba(16, 185, 129, 0.3);
+            --secondary: #0ea5e9;
+            --accent: #f43f5e;
+            --text-main: #f3f4f6;
+            --text-muted: #94a3b8;
+            --warning: #f59e0b;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(16, 185, 129, 0.12) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(14, 165, 233, 0.12) 0px, transparent 50%);
+            color: var(--text-main);
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2.5rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid var(--card-border);
+        }
+
+        h1 {
+            font-size: 2.2rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #fff 30%, var(--primary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.5px;
+        }
+
+        .badge {
+            background: rgba(16, 185, 129, 0.2);
+            border: 1px solid var(--primary);
+            color: #a7f3d0;
+            padding: 0.4rem 1rem;
+            border-radius: 50px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        /* Grid layouts */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        @media (max-width: 1024px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
+            padding: 1.8rem;
+            backdrop-filter: blur(12px);
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            border-color: rgba(255, 255, 255, 0.12);
+        }
+
+        .section-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        /* KPIs */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .kpi-card {
+            border-left: 4px solid var(--primary);
+        }
+
+        .kpi-card.secondary {
+            border-left-color: var(--secondary);
+        }
+
+        .kpi-card.warning {
+            border-left-color: var(--warning);
+        }
+
+        .kpi-label {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 0.5rem;
+        }
+
+        .kpi-val {
+            font-size: 2rem;
+            font-weight: 800;
+            color: #fff;
+        }
+
+        /* Interactive Simulator Panel */
+        .trade-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 1.2rem;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1.2fr 1fr;
+            gap: 1rem;
+        }
+
+        select, input[type="number"] {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--card-border);
+            border-radius: 10px;
+            padding: 0.8rem;
+            color: #fff;
+            font-size: 0.95rem;
+            outline: none;
+            width: 100%;
+        }
+
+        select option {
+            background: #04090b;
+        }
+
+        .btn-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .btn {
+            padding: 0.8rem;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: all 0.3s;
+        }
+
+        .btn-buy {
+            background: var(--primary);
+            color: #04090b;
+        }
+
+        .btn-buy:hover {
+            box-shadow: 0 0 15px var(--primary-glow);
+            filter: brightness(1.1);
+        }
+
+        .btn-sell {
+            background: rgba(244, 63, 94, 0.2);
+            border: 1px solid var(--accent);
+            color: var(--accent);
+        }
+
+        .btn-sell:hover {
+            background: var(--accent);
+            color: #04090b;
+        }
+
+        /* Stock Selector Pills */
+        .stock-selector {
+            display: flex;
+            gap: 0.8rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .stock-pill {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 0.6rem 1.2rem;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .stock-pill.active {
+            background: var(--primary);
+            color: #04090b;
+            border-color: var(--primary);
+        }
+
+        .chart-box {
+            position: relative;
+            height: 350px;
+            width: 100%;
+        }
+
+        .stats-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
+            margin-top: 1rem;
+        }
+
+        .stats-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.6rem 0.8rem;
+            background: rgba(255,255,255,0.02);
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div>
+                <h1>Real-Time Portfolio Forecaster & Simulator</h1>
+                <p style="color: var(--text-muted); margin-top: 0.25rem;">Domain: Applied Retail Investment Analytics & Moving Average Forecasts</p>
+            </div>
+            <div class="badge">Project 4: Real-world Finance</div>
+        </header>
+
+        <!-- KPI Grid -->
+        <div class="kpi-grid">
+            <div class="card kpi-card">
+                <div class="kpi-label">Cash Balance</div>
+                <div class="kpi-val" id="cash-bal">$10,000.00</div>
+            </div>
+            <div class="card kpi-card secondary">
+                <div class="kpi-label">Portfolio Value</div>
+                <div class="kpi-val" id="port-val">$0.00</div>
+            </div>
+            <div class="card kpi-card">
+                <div class="kpi-label">Total Assets Value</div>
+                <div class="kpi-val" id="total-val">$10,000.00</div>
+            </div>
+            <div class="card kpi-card warning">
+                <div class="kpi-label">Net Gain/Loss</div>
+                <div class="kpi-val" id="net-gain">$0.00 (0.00%)</div>
+            </div>
+        </div>
+
+        <div class="dashboard-grid">
+            <!-- Left Side: Interactive Pricing Chart & Forecasts -->
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+                    <h2 class="section-title" style="margin-bottom: 0;">Interactive Trend Analytics & SMA Forecasts</h2>
+                    <div class="stock-selector">
+                        <div class="stock-pill active" onclick="selectStock(event, 'TechCorp')">TechCorp</div>
+                        <div class="stock-pill" onclick="selectStock(event, 'EcoEnergy')">EcoEnergy</div>
+                        <div class="stock-pill" onclick="selectStock(event, 'MedHealth')">MedHealth</div>
+                    </div>
+                </div>
+
+                <div class="chart-box">
+                    <canvas id="stockChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Right Side: Portfolio Management & Buy/Sell Simulator -->
+            <div style="display: flex; flex-direction: column; gap: 2rem;">
+                <!-- Trade simulator -->
+                <div class="card">
+                    <h2 class="section-title">Investment Simulator</h2>
+                    <div class="trade-panel">
+                        <div class="form-row">
+                            <div>
+                                <label style="margin-bottom: 0.4rem; display: block;">Asset</label>
+                                <select id="trade-asset" onchange="updateLivePrice()">
+                                    <option value="TechCorp">TechCorp ($150.00)</option>
+                                    <option value="EcoEnergy">EcoEnergy ($80.00)</option>
+                                    <option value="MedHealth">MedHealth ($120.00)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label style="margin-bottom: 0.4rem; display: block;">Quantity</label>
+                                <input type="number" id="trade-qty" min="1" value="10">
+                            </div>
+                        </div>
+
+                        <div class="btn-group">
+                            <button class="btn btn-buy" onclick="executeTrade('buy')">Buy Asset</button>
+                            <button class="btn btn-sell" onclick="executeTrade('sell')">Sell Asset</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Asset breakdown statistics -->
+                <div class="card">
+                    <h2 class="section-title">Asset Health & Risk Audit</h2>
+                    <div class="stats-list" id="asset-audit-list">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Data Import -->
+    <script src="finance_data.js"></script>
+    <script>
+        // Game/Simulator state
+        let cash = 10000.00;
+        let portfolio = {
+            TechCorp: 0,
+            EcoEnergy: 0,
+            MedHealth: 0
+        };
+        
+        let currentSelectedStock = 'TechCorp';
+        let stockChart = null;
+
+        // Extract last prices from database
+        const stockPrices = {
+            TechCorp: financeResults.metrics.TechCorp.current_price,
+            EcoEnergy: financeResults.metrics.EcoEnergy.current_price,
+            MedHealth: financeResults.metrics.MedHealth.current_price
+        };
+
+        // Update dropdown prices labels
+        document.getElementById('trade-asset').innerHTML = `
+            <option value="TechCorp">TechCorp ($${stockPrices.TechCorp.toFixed(2)})</option>
+            <option value="EcoEnergy">EcoEnergy ($${stockPrices.EcoEnergy.toFixed(2)})</option>
+            <option value="MedHealth">MedHealth ($${stockPrices.MedHealth.toFixed(2)})</option>
+        `;
+
+        // Update live portfolio balances
+        function updatePortfolioUI() {
+            let portValue = 0;
+            for (let s in portfolio) {
+                portValue += portfolio[s] * stockPrices[s];
+            }
+            const total = cash + portValue;
+            const netGain = total - 10000.00;
+            const pct = (netGain / 10000.00) * 100;
+
+            document.getElementById('cash-bal').innerText = '$' + cash.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            document.getElementById('port-val').innerText = '$' + portValue.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            document.getElementById('total-val').innerText = '$' + total.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+
+            const netGainEl = document.getElementById('net-gain');
+            netGainEl.innerText = `${netGain >= 0 ? '+' : ''}$${netGain.toFixed(2)} (${netGain >= 0 ? '+' : ''}${pct.toFixed(2)}%)`;
+            if (netGain >= 0) {
+                netGainEl.style.color = 'var(--primary)';
+            } else {
+                netGainEl.style.color = 'var(--accent)';
+            }
+
+            // Populate Asset Health summary
+            const auditList = document.getElementById('asset-audit-list');
+            auditList.innerHTML = '';
+            for (let s in portfolio) {
+                const metric = financeResults.metrics[s];
+                const holdingValue = portfolio[s] * stockPrices[s];
+                
+                const div = document.createElement('div');
+                div.className = 'stats-item';
+                div.innerHTML = `
+                    <div>
+                        <strong style="color: #fff;">${s}</strong>
+                        <span style="font-size: 0.8rem; color: var(--text-muted); display: block;">Holdings: ${portfolio[s]} shares ($${holdingValue.toFixed(2)})</span>
+                    </div>
+                    <div style="text-align: right;">
+                        <span style="font-weight: 600; color: var(--primary); display: block;">Sharpe: ${metric.sharpe_ratio.toFixed(2)}</span>
+                        <span style="font-size: 0.8rem; color: var(--text-muted);">Vol: ${(metric.volatility * 100).toFixed(1)}%</span>
+                    </div>
+                `;
+                auditList.appendChild(div);
+            }
+        }
+
+        function updateLivePrice() {
+            // Dropdown triggers changes
+        }
+
+        // Execute trade
+        function executeTrade(type) {
+            const asset = document.getElementById('trade-asset').value;
+            const qty = parseInt(document.getElementById('trade-qty').value);
+            if (isNaN(qty) || qty <= 0) return alert('Enter a valid quantity.');
+
+            const price = stockPrices[asset];
+            const cost = price * qty;
+
+            if (type === 'buy') {
+                if (cost > cash) return alert('Insufficient funds to complete transaction.');
+                cash -= cost;
+                portfolio[asset] += qty;
+            } else {
+                if (portfolio[asset] < qty) return alert('You do not own enough shares to sell.');
+                cash += cost;
+                portfolio[asset] -= qty;
+            }
+
+            updatePortfolioUI();
+        }
+
+        // Selected stock visualization switcher
+        function selectStock(evt, stockName) {
+            const pills = document.getElementsByClassName('stock-pill');
+            for (let p of pills) p.classList.remove('active');
+            evt.currentTarget.classList.add('active');
+
+            currentSelectedStock = stockName;
+            renderChart();
+        }
+
+        // Chart.js display
+        function renderChart() {
+            const ctx = document.getElementById('stockChart').getContext('2d');
+            if (stockChart) stockChart.destroy();
+
+            const histDates = financeResults.dates;
+            const forecastDates = financeResults.forecast_dates;
+            
+            const prices = financeResults.stocks[currentSelectedStock];
+            const sma20 = financeResults.metrics[currentSelectedStock].sma20;
+            const sma50 = financeResults.metrics[currentSelectedStock].sma50;
+            const forecast = financeResults.metrics[currentSelectedStock].forecast;
+
+            // Align arrays for line continuity
+            const histLength = prices.length;
+            const totalLabels = [...histDates, ...forecastDates];
+
+            // Forecast array padded with nulls for historical period
+            const forecastDataset = Array(histLength - 1).fill(null);
+            forecastDataset.push(prices[histLength - 1]); // connect last historical point
+            forecastDataset.push(...forecast);
+
+            stockChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: totalLabels,
+                    datasets: [
+                        {
+                            label: 'Historical Price ($)',
+                            data: prices,
+                            borderColor: '#10b981',
+                            borderWidth: 2.5,
+                            pointRadius: 0,
+                            fill: false
+                        },
+                        {
+                            label: 'SMA 20',
+                            data: sma20,
+                            borderColor: '#0ea5e9',
+                            borderWidth: 1.5,
+                            pointRadius: 0,
+                            fill: false
+                        },
+                        {
+                            label: 'SMA 50',
+                            data: sma50,
+                            borderColor: '#f59e0b',
+                            borderWidth: 1.5,
+                            pointRadius: 0,
+                            fill: false
+                        },
+                        {
+                            label: 'Linear Forecast ($)',
+                            data: forecastDataset,
+                            borderColor: '#f43f5e',
+                            borderWidth: 2,
+                            borderDash: [5, 5],
+                            pointRadius: 0,
+                            fill: false
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top', labels: { color: '#f3f4f6', boxWidth: 12 } }
+                    },
+                    scales: {
+                        x: {
+                            grid: { color: 'rgba(255, 255, 255, 0.04)' },
+                            ticks: { color: '#94a3b8', maxTicksLimit: 12 }
+                        },
+                        y: {
+                            grid: { color: 'rgba(255, 255, 255, 0.04)' },
+                            ticks: { color: '#94a3b8' }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Initialize App
+        updatePortfolioUI();
+        renderChart();
+    </script>
+</body>
+</html>
